@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบริหารจัดการตารางงานประจำสัปดาห์</title>
+
+    <!-- Google Fonts: Sarabun & Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                        heading: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#1f4e79',
+                            600: '#183f63',
+                            700: '#12314e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar for table container */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Shift Color Themes */
+        .shift-rd { background-color: #fef3c7 !important; color: #92400e !important; border-color: #fde68a !important; }
+        .shift-11 { background-color: #ffffff !important; color: #1e293b !important; border-color: #e2e8f0 !important; }
+        .shift-12 { background-color: #e0f2fe !important; color: #0369a1 !important; border-color: #bae6fd !important; }
+        .shift-772 { background-color: #ffedd5 !important; color: #c2410c !important; border-color: #fed7aa !important; }
+        .shift-off { background-color: #f1f5f9 !important; color: #64748b !important; border-color: #e2e8f0 !important; }
+        .shift-empty { background-color: #fafafa !important; color: #a1a1aa !important; border-color: #f4f4f5 !important; }
+
+        /* Print styles */
+        @media print {
+            body { background: white !important; font-size: 11pt; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .card-shadow { box-shadow: none !important; border: 1px solid #ccc !important; }
+            .table-container { overflow: visible !important; }
+            select {
+                appearance: none;
+                -webkit-appearance: none;
+                border: none !important;
+                background: transparent !important;
+                font-weight: bold;
+                text-align-last: center;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+    <!-- Header Bar -->
+    <header class="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-900 text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 bg-white/10 backdrop-blur-md rounded-xl text-yellow-300 text-2xl shadow-inner">
+                        <i class="fa-solid fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold font-heading tracking-wide">ระบบบริหารจัดการตารางงานประจำสัปดาห์</h1>
+                        <p class="text-xs sm:text-sm text-blue-100 font-light">จัดตารางกะ วางแผนวันหยุด และสรุปกำลังพนักงานประจำสัปดาห์</p>
+                    </div>
+                </div>
+
+                <!-- Action Toolbar Header -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openFillWizardModal()" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-lg transition flex items-center gap-2 border border-white/20">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+                        <span>เครื่องมือเติมกะ</span>
+                    </button>
+                    <button onclick="openShareLinkModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-link"></i>
+                        <span>สร้างลิงก์กรอกข้อมูล</span>
+                    </button>
+                    <button onclick="window.print()" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-lg transition flex items-center gap-2 border border-white/20">
+                        <i class="fa-solid fa-print text-sky-300"></i>
+                        <span>พิมพ์ตาราง</span>
+                    </button>
+                    <button onclick="openExportModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-export"></i>
+                        <span>ส่งออก / บันทึก</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Week Selector & Summary Stats Header -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+            
+            <!-- Week Navigation Controls -->
+            <div class="lg:col-span-5 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">สัปดาห์ที่เลือก</span>
+                    <button onclick="resetToCurrentWeek()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> กลับมาสัปดาห์ปัจจุบัน
+                    </button>
+                </div>
+                
+                <div class="flex items-center justify-between gap-2">
+                    <button onclick="changeWeek(-1)" class="p-2.5 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition border border-slate-200" title="สัปดาห์ก่อนหน้า">
+                        <i class="fa-solid fa-chevron-left text-base"></i>
+                    </button>
+
+                    <div class="text-center flex-grow">
+                        <div id="weekRangeDisplay" class="text-base sm:text-lg font-bold text-slate-800 font-heading">
+                            --/--/---- - --/--/----
+                        </div>
+                        <div id="weekNumberDisplay" class="text-xs text-slate-500 font-medium">
+                            กำลังโหลด...
+                        </div>
+                    </div>
+
+                    <button onclick="changeWeek(1)" class="p-2.5 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition border border-slate-200" title="สัปดาห์ถัดไป">
+                        <i class="fa-solid fa-chevron-right text-base"></i>
+                    </button>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>เลือกวันที่เริ่มต้นสัปดาห์:</span>
+                    <input type="date" id="startDatePicker" onchange="onDatePickerChange(this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">พนักงานทั้งหมด</span>
+                        <i class="fa-solid fa-users text-brand-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="statTotalEmployees" class="text-2xl font-bold text-slate-800 font-heading">0</span>
+                        <span class="text-xs text-slate-500 ml-1">คน</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">วันทำงานรวม</span>
+                        <i class="fa-solid fa-briefcase text-emerald-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="statTotalWorkingDays" class="text-2xl font-bold text-slate-800 font-heading">0</span>
+                        <span class="text-xs text-slate-500 ml-1">กะ</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">วันหยุดรวม (RD)</span>
+                        <i class="fa-solid fa-umbrella-beach text-amber-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="statTotalRestDays" class="text-2xl font-bold text-slate-800 font-heading">0</span>
+                        <span class="text-xs text-slate-500 ml-1">วัน</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">เฉลี่ยต่อวัน</span>
+                        <i class="fa-solid fa-user-check text-indigo-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="statAvgWorkingDaily" class="text-2xl font-bold text-slate-800 font-heading">0</span>
+                        <span class="text-xs text-slate-500 ml-1">คน/วัน</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend & Filter Bar -->
+        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 no-print flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="font-semibold text-slate-500 mr-1"><i class="fa-solid fa-tags text-slate-400"></i> สัญลักษณ์กะ:</span>
+                <span class="px-2.5 py-1 rounded-md font-semibold shift-11 border">11 = กะปกติ (11:00 - 20:00)</span>
+                <span class="px-2.5 py-1 rounded-md font-semibold shift-12 border">12 = กะบ่าย (12:00 - 21:00)</span>
+                <span class="px-2.5 py-1 rounded-md font-semibold shift-772 border">772 = กะพิเศษ (07:00 - 16:00)</span>
+                <span class="px-2.5 py-1 rounded-md font-semibold shift-rd border">RD = วันหยุดประจำสัปดาห์</span>
+                <span class="px-2.5 py-1 rounded-md font-semibold shift-off border">OFF = ลาหยุด / วันหยุดอื่น</span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex-grow sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหารายชื่อ / PC..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <button onclick="addRow()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>เพิ่มรายชื่อ</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Roster Schedule Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-shadow">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs sm:text-sm text-left border-collapse" id="scheduleTable">
+                    <thead>
+                        <!-- Header Row 1: Day Names -->
+                        <tr class="bg-brand-500 text-white text-center font-heading">
+                            <th rowspan="2" class="px-4 py-3 min-w-[180px] max-w-[220px] text-left border-r border-brand-600 sticky left-0 bg-brand-500 z-10 shadow-md">
+                                <div class="font-bold text-sm">PC / กะงาน</div>
+                                <div class="text-[10px] text-blue-100 font-normal">ชื่อพนักงาน - แบรนด์</div>
+                            </th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">จันทร์</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">อังคาร</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">พุธ</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">พฤหัสบดี</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">ศุกร์</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">เสาร์</th>
+                            <th class="px-2 py-2 border-r border-brand-600 min-w-[95px]">อาทิตย์</th>
+                            <th rowspan="2" class="px-2 py-2 border-r border-brand-600 min-w-[85px] bg-brand-600">
+                                <div>สถิติสัปดาห์</div>
+                                <div class="text-[10px] font-normal text-blue-100">ทำงาน / RD</div>
+                            </th>
+                            <th rowspan="2" class="px-2 py-2 min-w-[70px] no-print">จัดการ</th>
+                        </tr>
+                        <!-- Header Row 2: Dynamic Dates -->
+                        <tr class="bg-blue-50 text-brand-700 text-center font-bold border-b border-slate-200" id="dateHeaderRow">
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d0">1</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d1">2</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d2">3</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d3">4</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d4">5</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d5">6</th>
+                            <th class="px-1 py-1.5 border-r border-slate-200 text-xs font-semibold" id="d6">7</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200">
+                        <!-- Dynamic rows loaded via JS -->
+                    </tbody>
+                    <tfoot class="bg-slate-50 font-semibold border-t-2 border-slate-300">
+                        <!-- Daily Shift Count Summary -->
+                        <tr class="text-center text-xs text-slate-700">
+                            <td class="px-3 py-2 text-left font-bold text-slate-800 border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
+                                <i class="fa-solid fa-user-check text-brand-600 mr-1"></i> มาทำงานรวม (คน)
+                            </td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-0">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-1">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-2">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-3">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-4">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-5">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold text-emerald-700" id="duty-count-6">0</td>
+                            <td class="px-2 py-2 border-r border-slate-200 font-bold bg-slate-100 text-slate-800" id="total-duty-sum">0</td>
+                            <td class="no-print"></td>
+                        </tr>
+                        <tr class="text-center text-[11px] text-slate-500 bg-amber-50/50">
+                            <td class="px-3 py-1.5 text-left font-medium border-r border-slate-200 sticky left-0 bg-amber-50/50 z-10">
+                                <i class="fa-solid fa-bed text-amber-600 mr-1"></i> วันหยุด (RD/OFF)
+                            </td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-0">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-1">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-2">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-3">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-4">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-5">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-medium text-amber-800" id="rd-count-6">0</td>
+                            <td class="px-2 py-1.5 border-r border-slate-200 font-bold bg-amber-100/60 text-amber-900" id="total-rd-sum">0</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bottom Quick Actions & Notes -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2">
+                <h3 class="text-sm font-bold text-slate-800 font-heading mb-2 flex items-center gap-2">
+                    <i class="fa-regular fa-lightbulb text-amber-500"></i> คำแนะนำและการใช้งาน
+                </h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                    <li>สามารถพิมพ์ชื่อพนักงานลงในช่องแถวซ้ายมือได้โดยตรง ระบบจะบันทึกข้อมูลอัตโนมัติ</li>
+                    <li>กดปุ่ม <span class="font-semibold text-brand-600"><i class="fa-solid fa-copy"></i></span> ข้างชื่อพนักงาน เพื่อคัดลอกรูปแบบกะของพนักงานคนนั้นไปยังอีกคน</li>
+                    <li>ใช้นาวิเกเตอร์ <span class="font-semibold text-slate-700">&lt; สัปดาห์ &gt;</span> เพื่อสลับดูและจัดตารางงานของสัปดาห์อื่นล่วงหน้า</li>
+                    <li>ข้อมูลจะถูกบันทึกไว้บนเว็บบราวเซอร์ของคุณโดยอัตโนมัติ (Local Storage)</li>
+                </ul>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 font-heading mb-1">การจัดการข้อมูล</h3>
+                    <p class="text-xs text-slate-500">คืนค่าเริ่มต้น หรือ ล้างตารางงานทั้งหมด</p>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                    <button onclick="restoreDefaultData()" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
+                        <i class="fa-solid fa-arrow-rotate-left mr-1"></i> โหลดตัวอย่าง
+                    </button>
+                    <button onclick="confirmClearSchedule()" class="flex-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> ล้างตาราง
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Auto Fill Wizard Modal -->
+    <div id="fillWizardModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 animate-fade-in">
+            <div class="flex items-center justify-between border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 font-heading flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> เครื่องมือเติมกะอัตโนมัติ
+                </h3>
+                <button onclick="closeFillWizardModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">1. เลือกรูปแบบการเติมกะ</label>
+                    <select id="fillPatternSelect" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-500">
+                        <option value="5-11-2-rd">ทำงานกะ 11 (5 วัน) + หยุด RD (2 วัน - พุธ/พฤหัส)</option>
+                        <option value="5-12-2-rd">ทำงานกะ 12 (5 วัน) + หยุด RD (2 วัน - จันทร์/อังคาร)</option>
+                        <option value="all-11">กะปกติ 11 ทั้งหมด (ยังไม่กำหนดวันหยุด)</option>
+                        <option value="clear-all">ล้างกะทั้งหมดในสัปดาห์นี้ให้เป็นช่องว่าง (-)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">2. บังคับใช้กับ</label>
+                    <select id="fillTargetSelect" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-500">
+                        <option value="all">พนักงานทุกคนในตาราง</option>
+                        <option value="empty-only">เฉพาะพนักงานที่ยังไม่ได้จัดกะ (ช่องว่าง)</option>
+                    </select>
+                </div>
+
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px]">
+                    <i class="fa-solid fa-circle-info mr-1"></i> การดำเนินการนี้จะเขียนทับตารางกะในสัปดาห์ปัจจุบันตามเงื่อนไขที่เลือก
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="closeFillWizardModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">ยกเลิก</button>
+                <button onclick="applyFillWizard()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold">ตกลง เติมข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export / Save Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
+            <div class="flex items-center justify-between border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 font-heading flex items-center gap-2">
+                    <i class="fa-solid fa-file-export text-emerald-600"></i> บันทึกและส่งออกข้อมูล
+                </h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="exportToCSV()" class="w-full p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl flex items-center gap-3 transition text-left group">
+                    <div class="p-2.5 bg-emerald-100 text-emerald-700 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition">
+                        <i class="fa-solid fa-file-csv text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800 text-xs">ส่งออกไฟล์ CSV (Excel)</div>
+                        <div class="text-[11px] text-slate-500">ดาวน์โหลดเป็นไฟล์ .csv สำหรับเปิดใน Excel</div>
+                    </div>
+                </button>
+
+                <button onclick="exportJSONBackup()" class="w-full p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl flex items-center gap-3 transition text-left group">
+                    <div class="p-2.5 bg-indigo-100 text-indigo-700 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition">
+                        <i class="fa-solid fa-file-code text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800 text-xs">สำรองข้อมูลทั้งหมด (JSON)</div>
+                        <div class="text-[11px] text-slate-500">ดาวน์โหลดไฟล์สำรองเก็บไว้ในเครื่อง</div>
+                    </div>
+                </button>
+
+                <div class="pt-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">นำเข้าข้อมูลจากไฟล์สำรอง (.json):</label>
+                    <input type="file" id="importJsonInput" accept=".json" onchange="importJSONBackup(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeExportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Link Modal -->
+    <div id="shareLinkModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-6">
+            <div class="flex items-center justify-between border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 font-heading flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-amber-500"></i> สร้างลิงก์ส่งให้พนักงานกรอกข้อมูล
+                </h3>
+                <button onclick="closeShareLinkModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <p class="text-slate-600">
+                    คัดลอกลิงก์หรือใช้ QR Code ด้านล่างนี้ ส่งเข้า LINE หรือแชตกลุ่มเพื่อให้พนักงานเปิดเข้ามาดูและกรอกกะงานประจำสัปดาห์ได้ทันที
+                </p>
+
+                <!-- Link Box -->
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">ลิงก์เข้ากรอกข้อมูลสัปดาห์นี้:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="shareUrlInput" readonly class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 text-xs font-mono select-all focus:outline-none">
+                        <button onclick="copyShareLink()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-sm whitespace-nowrap transition flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>คัดลอก</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QR Code Display -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center flex flex-col items-center justify-center gap-2">
+                    <span class="font-semibold text-slate-700">สแกน QR Code เพื่อเปิดกรอกกะบนมือถือ</span>
+                    <img id="shareQrCodeImg" src="" alt="QR Code" class="w-36 h-36 bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <span class="text-[11px] text-slate-400">สามารถบันทึกหรือแคปรูป QR Code ไปส่งใน Line กลุ่มได้</span>
+                </div>
+
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-[11px] flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+                    <div>
+                        <strong>ข้อแนะนำการนำไปใช้งานบนเว็บ (Online Host):</strong> หากต้องการเปิดให้พนักงานทุกคนกดเข้าผ่านอินเทอร์เน็ตได้ตลอด 24 ชม. สามารถนำไฟล์ <code class="bg-blue-100 px-1 rounded">index.html</code> ไปอัปโหลดขึ้นบริการโฮสต์ฟรี เช่น <strong>GitHub Pages</strong>, <strong>Netlify</strong> หรือ <strong>Vercel</strong> เพื่อสร้างลิงก์เว็บไซต์ประจำทีมได้ทันที
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeShareLinkModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notifications -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-5 text-center">
+            <div id="confirmIcon" class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h4 id="confirmTitle" class="text-base font-bold text-slate-800 font-heading mb-1">ยืนยันการทำรายการ</h4>
+            <p id="confirmMessage" class="text-xs text-slate-600 mb-5">คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
+            <div class="flex items-center justify-center gap-2">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">ยกเลิก</button>
+                <button id="confirmBtnAction" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration & Initial Data
+        const SHIFT_OPTIONS = ["", "11", "12", "772", "RD", "OFF"];
+
+        const DEFAULT_EMPLOYEES = [
+            { name: "โอ๋", shifts: ["11", "11", "RD", "11", "12", "12", "11"] },
+            { name: "เชอรี่", shifts: ["12", "RD", "11", "11", "11", "11", "12"] },
+            { name: "แอน", shifts: ["11", "11", "11", "RD", "12", "12", "11"] },
+            { name: "แจง", shifts: ["12", "11", "11", "RD", "11", "11", "12"] },
+            { name: "Mark up", shifts: ["11", "11", "12", "12", "11", "RD", "RD"] },
+            { name: "Aqua", shifts: ["12", "12", "11", "11", "RD", "11", "12"] },
+            { name: "แคต", shifts: ["RD", "12", "11", "12", "11", "11", "11"] },
+            { name: "ดาว", shifts: ["RD", "12", "11", "11", "11", "11", "12"] },
+            { name: "ริ", shifts: ["11", "11", "RD", "11", "12", "12", "11"] },
+            { name: "หนูแดง", shifts: ["12", "RD", "11", "12", "11", "11", "11"] },
+            { name: "จอย", shifts: ["11", "12", "11", "RD", "12", "11", "11"] },
+            { name: "4U2", shifts: ["12", "11", "RD", "12", "11", "11", "11"] },
+            { name: "CLIV", shifts: ["11", "11", "12", "11", "RD", "RD", "12"] },
+            { name: "โฟกัส", shifts: ["RD", "11", "12", "11", "12", "11", "12"] },
+            { name: "บี", shifts: ["772", "RD", "12", "11", "772", "12", "11"] }
+        ];
+
+        // Global State
+        let currentMonday = getMonday(new Date());
+        let weeklySchedules = {}; // Key format: YYYY-MM-DD (Monday date string) -> Array of employees
+        let confirmCallback = null;
+
+        function getMonday(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+            const monday = new Date(date.setDate(diff));
+            monday.setHours(0, 0, 0, 0);
+            return monday;
+        }
+
+        function formatDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatThaiDateShort(dateObj) {
+            const day = dateObj.getDate();
+            const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            return `${day} ${monthNames[dateObj.getMonth()]}`;
+        }
+
+        function formatThaiDateFull(dateObj) {
+            const day = dateObj.getDate();
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const year = dateObj.getFullYear() + 543;
+            return `${day} ${monthNames[dateObj.getMonth()]} ${year}`;
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('weekly_work_schedules_v2', JSON.stringify(weeklySchedules));
+            } catch (e) {
+                console.error("Storage save error", e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem('weekly_work_schedules_v2');
+                if (stored) {
+                    weeklySchedules = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Storage load error", e);
+                weeklySchedules = {};
+            }
+        }
+
+        function getCurrentScheduleData() {
+            const key = formatDateKey(currentMonday);
+            if (!weeklySchedules[key]) {
+                // Check if previous week exists to copy staff list template
+                const prevMonday = new Date(currentMonday);
+                prevMonday.setDate(prevMonday.getDate() - 7);
+                const prevKey = formatDateKey(prevMonday);
+
+                if (weeklySchedules[prevKey]) {
+                    // Copy structure with empty shifts
+                    weeklySchedules[key] = weeklySchedules[prevKey].map(emp => ({
+                        name: emp.name,
+                        shifts: ["", "", "", "", "", "", ""]
+                    }));
+                } else {
+                    // Use default template
+                    weeklySchedules[key] = JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+                }
+                saveToLocalStorage();
+            }
+            return weeklySchedules[key];
+        }
+
+        function renderWeekHeader() {
+            const sunday = new Date(currentMonday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const rangeText = `${formatThaiDateShort(currentMonday)} - ${formatThaiDateShort(sunday)} ${sunday.getFullYear() + 543}`;
+            document.getElementById('weekRangeDisplay').innerText = rangeText;
+
+            // Week Number
+            const startOfYear = new Date(currentMonday.getFullYear(), 0, 1);
+            const pastDaysOfYear = (currentMonday - startOfYear) / 86400000;
+            const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+            document.getElementById('weekNumberDisplay').innerText = `สัปดาห์ที่ ${weekNum} / ${currentMonday.getFullYear() + 543}`;
+
+            // Sync datepicker
+            document.getElementById('startDatePicker').value = formatDateKey(currentMonday);
+
+            // Update Header Days (จันทร์ - อาทิตย์)
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(currentMonday);
+                dayDate.setDate(dayDate.getDate() + i);
+                const elem = document.getElementById(`d${i}`);
+                if (elem) {
+                    elem.innerText = `${dayDate.getDate()} ${formatThaiDateShort(dayDate).split(' ')[1]}`;
+                }
+            }
+        }
+
+        function getShiftClass(val) {
+            switch (val) {
+                case "RD": return "shift-rd";
+                case "11": return "shift-11";
+                case "12": return "shift-12";
+                case "772": return "shift-772";
+                case "OFF": return "shift-off";
+                default: return "shift-empty";
+            }
+        }
+
+        function renderTable() {
+            renderWeekHeader();
+
+            const scheduleData = getCurrentScheduleData();
+            const searchTerm = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = "";
+
+            // Dynamic shift counters
+            const dailyDutyCounts = [0, 0, 0, 0, 0, 0, 0];
+            const dailyRdCounts = [0, 0, 0, 0, 0, 0, 0];
+            let totalWorkingDaysSum = 0;
+            let totalRestDaysSum = 0;
+
+            scheduleData.forEach((row, rowIndex) => {
+                // Search filter
+                if (searchTerm && !row.name.toLowerCase().includes(searchTerm)) {
+                    return;
+                }
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-200 text-xs";
+
+                // Column 1: Employee Name Input
+                const tdName = document.createElement("td");
+                tdName.className = "px-3 py-2 border-r border-slate-200 font-medium sticky left-0 bg-white z-10 shadow-sm";
+                
+                const nameWrapper = document.createElement("div");
+                nameWrapper.className = "flex items-center gap-1.5";
+
+                const inputName = document.createElement("input");
+                inputName.type = "text";
+                inputName.className = "w-full bg-transparent font-semibold text-slate-800 focus:bg-white focus:border focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded px-1.5 py-1 text-xs transition";
+                inputName.value = row.name;
+                inputName.placeholder = "พิมพ์ชื่อพนักงาน/แบรนด์...";
+                inputName.onchange = (e) => {
+                    scheduleData[rowIndex].name = e.target.value;
+                    saveToLocalStorage();
+                    showToast("อัปเดตรายชื่อแล้ว", "info");
+                };
+
+                nameWrapper.appendChild(inputName);
+                tdName.appendChild(nameWrapper);
+                tr.appendChild(tdName);
+
+                // Counters for this specific employee
+                let empWorkCount = 0;
+                let empRdCount = 0;
+
+                // Shift Selectors for 7 Days
+                row.shifts.forEach((shift, dayIndex) => {
+                    const td = document.createElement("td");
+                    td.className = "p-1 border-r border-slate-200 text-center";
+
+                    const select = document.createElement("select");
+                    select.className = `w-full text-center font-bold text-xs rounded py-1 px-1 border transition cursor-pointer focus:outline-none ${getShiftClass(shift)}`;
+
+                    SHIFT_OPTIONS.forEach(opt => {
+                        const option = document.createElement("option");
+                        option.value = opt;
+                        option.textContent = opt === "" ? "-" : opt;
+                        if (opt === shift) option.selected = true;
+                        select.appendChild(option);
+                    });
+
+                    // Count logic
+                    if (["11", "12", "772"].includes(shift)) {
+                        dailyDutyCounts[dayIndex]++;
+                        empWorkCount++;
+                    } else if (["RD", "OFF"].includes(shift)) {
+                        dailyRdCounts[dayIndex]++;
+                        empRdCount++;
+                    }
+
+                    select.addEventListener("change", function() {
+                        const newShift = this.value;
+                        scheduleData[rowIndex].shifts[dayIndex] = newShift;
+                        this.className = `w-full text-center font-bold text-xs rounded py-1 px-1 border transition cursor-pointer focus:outline-none ${getShiftClass(newShift)}`;
+                        saveToLocalStorage();
+                        renderTable(); // Re-render to update summary stats live
+                    });
+
+                    td.appendChild(select);
+                    tr.appendChild(td);
+                });
+
+                totalWorkingDaysSum += empWorkCount;
+                totalRestDaysSum += empRdCount;
+
+                // Column: Weekly Stats for Employee
+                const tdStats = document.createElement("td");
+                tdStats.className = "px-2 py-2 border-r border-slate-200 text-center bg-slate-50 font-semibold";
+                tdStats.innerHTML = `<span class="text-emerald-700">${empWorkCount} กะ</span> / <span class="text-amber-700">${empRdCount} RD</span>`;
+                tr.appendChild(tdStats);
+
+                // Column: Row Action Buttons
+                const tdAction = document.createElement("td");
+                tdAction.className = "px-2 py-1 text-center no-print";
+                
+                const actionGroup = document.createElement("div");
+                actionGroup.className = "flex items-center justify-center gap-1";
+
+                // Duplicate/Copy row pattern button
+                const btnCopy = document.createElement("button");
+                btnCopy.className = "p-1 text-slate-400 hover:text-brand-600 transition";
+                btnCopy.title = "คัดลอกกะของพนักงานคนนี้ไปยังคนถัดไป";
+                btnCopy.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                btnCopy.onclick = () => duplicateRowPattern(rowIndex);
+
+                // Delete button
+                const btnDelete = document.createElement("button");
+                btnDelete.className = "p-1 text-slate-400 hover:text-rose-600 transition";
+                btnDelete.title = "ลบรายชื่อนี้";
+                btnDelete.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                btnDelete.onclick = () => deleteRow(rowIndex);
+
+                actionGroup.appendChild(btnCopy);
+                actionGroup.appendChild(btnDelete);
+                tdAction.appendChild(actionGroup);
+                tr.appendChild(tdAction);
+
+                tbody.appendChild(tr);
+            });
+
+            // Update Daily Summary Footer Counts
+            for (let i = 0; i < 7; i++) {
+                const dutyElem = document.getElementById(`duty-count-${i}`);
+                const rdElem = document.getElementById(`rd-count-${i}`);
+                if (dutyElem) dutyElem.innerText = dailyDutyCounts[i];
+                if (rdElem) rdElem.innerText = dailyRdCounts[i];
+            }
+
+            document.getElementById('total-duty-sum').innerText = `${totalWorkingDaysSum} กะ`;
+            document.getElementById('total-rd-sum').innerText = `${totalRestDaysSum} วัน`;
+
+            // Update Dashboard KPI Cards
+            document.getElementById('statTotalEmployees').innerText = scheduleData.length;
+            document.getElementById('statTotalWorkingDays').innerText = totalWorkingDaysSum;
+            document.getElementById('statTotalRestDays').innerText = totalRestDaysSum;
+            
+            const avgDaily = scheduleData.length > 0 ? (totalWorkingDaysSum / 7).toFixed(1) : "0";
+            document.getElementById('statAvgWorkingDaily').innerText = avgDaily;
+        }
+
+        function addRow() {
+            const data = getCurrentScheduleData();
+            data.push({
+                name: `พนักงานใหม่ ${data.length + 1}`,
+                shifts: ["", "", "", "", "", "", ""]
+            });
+            saveToLocalStorage();
+            renderTable();
+            showToast("เพิ่มพนักงานใหม่แล้ว", "success");
+        }
+
+        function duplicateRowPattern(index) {
+            const data = getCurrentScheduleData();
+            const source = data[index];
+            data.splice(index + 1, 0, {
+                name: `${source.name} (สำเนา)`,
+                shifts: [...source.shifts]
+            });
+            saveToLocalStorage();
+            renderTable();
+            showToast(`คัดลอกกะจาก ${source.name} เรียบร้อยแล้ว`, "success");
+        }
+
+        function deleteRow(index) {
+            const data = getCurrentScheduleData();
+            const empName = data[index]?.name || "รายการนี้";
+
+            openConfirmModal(
+                "ยืนยันการลบรายชื่อ",
+                `คุณต้องการลบรายชื่อ "${empName}" ออกจากตารางงานประจำสัปดาห์ใช่หรือไม่?`,
+                () => {
+                    data.splice(index, 1);
+                    saveToLocalStorage();
+                    renderTable();
+                    showToast(`ลบ ${empName} เรียบร้อยแล้ว`, "info");
+                }
+            );
+        }
+
+        function changeWeek(offsetDays) {
+            currentMonday.setDate(currentMonday.getDate() + (offsetDays * 7));
+            renderTable();
+        }
+
+        function resetToCurrentWeek() {
+            currentMonday = getMonday(new Date());
+            renderTable();
+            showToast("สลับมาสัปดาห์ปัจจุบันเรียบร้อย", "info");
+        }
+
+        function onDatePickerChange(dateVal) {
+            if (!dateVal) return;
+            const selectedDate = new Date(dateVal);
+            currentMonday = getMonday(selectedDate);
+            renderTable();
+        }
+
+        function openFillWizardModal() {
+            document.getElementById('fillWizardModal').classList.remove('hidden');
+        }
+
+        function closeFillWizardModal() {
+            document.getElementById('fillWizardModal').classList.add('hidden');
+        }
+
+        function applyFillWizard() {
+            const pattern = document.getElementById('fillPatternSelect').value;
+            const target = document.getElementById('fillTargetSelect').value;
+            const schedule = getCurrentScheduleData();
+
+            schedule.forEach(emp => {
+                const isEmpty = emp.shifts.every(s => s === "");
+                if (target === "empty-only" && !isEmpty) return;
+
+                if (pattern === "5-11-2-rd") {
+                    emp.shifts = ["11", "11", "RD", "RD", "11", "11", "11"];
+                } else if (pattern === "5-12-2-rd") {
+                    emp.shifts = ["RD", "RD", "12", "12", "12", "12", "12"];
+                } else if (pattern === "all-11") {
+                    emp.shifts = ["11", "11", "11", "11", "11", "11", "11"];
+                } else if (pattern === "clear-all") {
+                    emp.shifts = ["", "", "", "", "", "", ""];
+                }
+            });
+
+            saveToLocalStorage();
+            renderTable();
+            closeFillWizardModal();
+            showToast("เติมข้อมูลกะอัตโนมัติเรียบร้อยแล้ว", "success");
+        }
+
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function openShareLinkModal() {
+            const key = formatDateKey(currentMonday);
+            const currentData = getCurrentScheduleData();
+            
+            // Encode schedule state into URL hash
+            const payload = {
+                week: key,
+                data: currentData
+            };
+            
+            const jsonStr = JSON.stringify(payload);
+            const encodedData = btoa(encodeURIComponent(jsonStr));
+            
+            const baseUrl = window.location.origin + window.location.pathname;
+            const fullShareUrl = `${baseUrl}#data=${encodedData}`;
+
+            const urlInput = document.getElementById('shareUrlInput');
+            urlInput.value = fullShareUrl;
+
+            // Generate QR Code via external API
+            const qrImg = document.getElementById('shareQrCodeImg');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullShareUrl)}`;
+
+            document.getElementById('shareLinkModal').classList.remove('hidden');
+        }
+
+        function closeShareLinkModal() {
+            document.getElementById('shareLinkModal').classList.add('hidden');
+        }
+
+        function copyShareLink() {
+            const urlInput = document.getElementById('shareUrlInput');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                showToast("คัดลอกลิงก์เรียบร้อยแล้ว!", "success");
+            } catch (err) {
+                showToast("กรุณากดคัดลอกด้วยตนเอง", "error");
+            }
+        }
+
+        function checkUrlParametersOnLoad() {
+            if (window.location.hash && window.location.hash.startsWith('#data=')) {
+                try {
+                    const encodedData = window.location.hash.replace('#data=', '');
+                    const jsonStr = decodeURIComponent(atob(encodedData));
+                    const payload = JSON.parse(jsonStr);
+
+                    if (payload && payload.week && payload.data) {
+                        const parsedDate = new Date(payload.week);
+                        if (!isNaN(parsedDate.getTime())) {
+                            currentMonday = getMonday(parsedDate);
+                            weeklySchedules[payload.week] = payload.data;
+                            saveToLocalStorage();
+                            showToast(`โหลดข้อมูลตารางงานสัปดาห์ ${payload.week} จากลิงก์สำเร็จ!`, "success");
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing share link data", e);
+                    showToast("ไม่สามารถโหลดข้อมูลจากลิงก์ได้", "error");
+                }
+            }
+        }
+
+        function exportToCSV() {
+            const schedule = getCurrentScheduleData();
+            const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+            
+            let csvContent = "\uFEFF"; // UTF-8 BOM for Thai encoding in Excel
+            csvContent += `ตารางงานประจำสัปดาห์ (${formatThaiDateFull(currentMonday)})\n\n`;
+            csvContent += `PC/รายชื่อ,${days.join(",")}\n`;
+
+            schedule.forEach(row => {
+                const line = [
+                    `"${row.name.replace(/"/g, '""')}"`,
+                    ...row.shifts.map(s => `"${s || '-'}"`)
+                ].join(",");
+                csvContent += line + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `ตารางงาน_${formatDateKey(currentMonday)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeExportModal();
+            showToast("ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว", "success");
+        }
+
+        function exportJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(weeklySchedules, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_schedules_${formatDateKey(new Date())}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            closeExportModal();
+            showToast("ดาวน์โหลดสำรองข้อมูลเรียบร้อยแล้ว", "success");
+        }
+
+        function importJSONBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && typeof parsed === 'object') {
+                        weeklySchedules = parsed;
+                        saveToLocalStorage();
+                        renderTable();
+                        closeExportModal();
+                        showToast("นำเข้าข้อมูลสำรองสำเร็จแล้ว!", "success");
+                    } else {
+                        throw new Error("รูปแบบข้อมูลไม่ถูกต้อง");
+                    }
+                } catch (err) {
+                    showToast("ไม่สามารถอ่านไฟล์ได้ รูปแบบไฟล์ JSON ไม่ถูกต้อง", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function restoreDefaultData() {
+            openConfirmModal(
+                "คืนค่าข้อมูลตัวอย่าง",
+                "คุณต้องการรีเซ็ตสัปดาห์นี้กลับไปเป็นข้อมูลตัวอย่างเริ่มต้นใช่หรือไม่?",
+                () => {
+                    const key = formatDateKey(currentMonday);
+                    weeklySchedules[key] = JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+                    saveToLocalStorage();
+                    renderTable();
+                    showToast("โหลดข้อมูลตัวอย่างเรียบร้อยแล้ว", "info");
+                }
+            );
+        }
+
+        function confirmClearSchedule() {
+            openConfirmModal(
+                "ล้างตารางงานในสัปดาห์นี้",
+                "คุณต้องการล้างข้อมูลกะทั้งหมดของพนักงานทุกคนในสัปดาห์นี้ใช่หรือไม่?",
+                () => {
+                    const data = getCurrentScheduleData();
+                    data.forEach(emp => {
+                        emp.shifts = ["", "", "", "", "", "", ""];
+                    });
+                    saveToLocalStorage();
+                    renderTable();
+                    showToast("ล้างตารางงานสัปดาห์นี้เรียบร้อยแล้ว", "info");
+                }
+            );
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+
+            let bgClass = "bg-slate-800 text-white";
+            let icon = '<i class="fa-solid fa-circle-info text-sky-400"></i>';
+
+            if (type === "success") {
+                bgClass = "bg-emerald-800 text-emerald-50";
+                icon = '<i class="fa-solid fa-circle-check text-emerald-300"></i>';
+            } else if (type === "error") {
+                bgClass = "bg-rose-800 text-rose-50";
+                icon = '<i class="fa-solid fa-circle-xmark text-rose-300"></i>';
+            }
+
+            toast.className = `flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold ${bgClass} transition duration-300 opacity-0 transform translate-y-2 pointer-events-auto`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove("opacity-0", "translate-y-2");
+            }, 10);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            confirmCallback = onConfirm;
+
+            const btn = document.getElementById('confirmBtnAction');
+            btn.onclick = () => {
+                if (confirmCallback) confirmCallback();
+                closeConfirmModal(true);
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            checkUrlParametersOnLoad();
+            renderTable();
+        });
+    </script>
+</body>
+</html>
